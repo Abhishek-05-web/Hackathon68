@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherGPT</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css" integrity="sha512-QeR2VH+lsBE5LSAe1Q5EnTBbe7XTBubt8dG93Y7gidSgdMCr8nVqKcfKAMyN96SV8KDbZVTDXChatu5G2KQGzg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- -----------Header-------------- -->
+    <header>
+        <div class="Header">
+            <!-- 1.Brand-Box -->
+            <span class="brand-box">
+                <h3>W</h3>
+            </span>
+            <!-- 2.Box2 -->
+            <span class="box2">
+                <span><h3>WeatherGPT</h3></span>
+                <span><p>Weather Intelligence</p></span>
+            </span>
+            <!-- Current-Locatio -->
+             <div class="location">
+                <span id="icon"><i class="fa-solid fa-location-crosshairs" style="color: rgb(11, 11, 11);"></i></span>
+                <span class="location-address">
+                    <p><small>Current Location</small></p>
+                    <h3>Sindri, Jharkhand</h3>
+                </span>
+             </div>
+            <!-- 4. Search-Box -->
+            <div class="search-box search-border">
+                <div id="icon"><i class="fa-solid fa-magnifying-glass" style="color: rgb(13, 12, 12);"></i></div>
+                <input placeholder="Search for City, State" id="search-bar">
+                <button class="search-button" type="submit">Search</button>
+            </div>
+            <!-- 5. Box5 -->
+            <span class="mode">
+                <i class="fa-solid fa-circle-half-stroke" style="color: black;"></i>
+            </span>
+        </div>
+    </header>
+    <main>
+        <div class="Content">
+            <div class="weather-card box">
+                <div class="weather-card-left">
+                    <p class="date">Tuesday · 8 SEPTEMBER</p>
+                    <span class="main-temp">
+                        <p class="condition">Partly cloudy</p>
+                        <span class="main-temp-val"><h1>29</h1><p><sup><small style="font-size: 50%;">°C</small></sup></p></span>
+                    </span>
+                    <div class="current-location">
+                        <span class="mini-icon"><i class="fa-solid fa-location-crosshairs" style="color: rgb(180, 60, 60);"></i></span>
+                        <div class="location-text">
+                            <h3 class="location-line1">Sindri</h3>
+                            <p class="location-line2">Dhanbad, Jharkhand</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="weather-visual">
+                    <div class="visual"><img id="weather-icon" src="icon/partly-cloudy-day.png" alt="Weather"></div>
+                </div>
+            </div>
+            <!-- Alert box -->
+            <div class="alert box">
+                <p>RISK MONITOR</p>
+                <h3>Weather Alert</h3>
+                <div class="alert-result">
+                    <span  class="status-icon"><i class="fa-solid fa-check" style="color: rgb(8, 116, 35);"></i></span>
+                    No serve weather risk detected
+                </div>
+                <div class="risk-bars">
+                    <!-- =======rain====== -->
+                    <div class="risk-row">
+                        <span>Rain</span>
+                        <div class="risk-track"><div class="risk-fill rain-bar"></div></div>
+                        <span class="rain-level">Low</span>
+                    </div>
+                    <!-- ========Wind======== -->
+                    <div class="risk-row">
+                        <span>Wind</span>
+                        <div class="risk-track"><div class="risk-fill wind-bar"></div></div>
+                        <span class="wind-level">Low</span>
+                    </div>
+                    <!-- =========Heat========== -->
+                    <div class="risk-row">
+                        <span>Heat</span>
+                        <div class="risk-track"><div class="risk-fill heat-bar"></div></div>
+                        <span class="heat-level">Moderate</span>
+                    </div>
+                </div>
+            </div>
+        <!-- ========================================== -->
+        <!-- ============Four Horizontal box========== -->
+         <!-- =========================================== -->
+        </div>
+        <div class="four-box">
+            <div class="Box1 Box">
+                <div class="four-icon"><i style="transform: rotate(270deg);" class="fa-solid fa-circle-half-stroke" style="color: rgb(192, 113, 52);"></i></div>
+                <div class="weather-result">
+                    <span class="result-text">
+                        <p class="four-text">Humidity:</p> <p class="Humidity four-text">Comfortable</p>
+                    </span>
+                    <p class="data">68%</p>
+                </div> 
+            </div>
+            <div class="Box2 Box">
+                <div class="four-icon"><i class="fa-solid fa-wind" style="color: pink;"></i></div>
+                <div class="weather-result">
+                    <span class="result-text">
+                        <p class="four-text">Wind:</p> <p class="Wind four-text">ENE Freeze</p>
+                    </span>
+                    <p class="data">12km/h</p>
+                </div>
+            </div>
+            <div class="Box3 Box">
+                <div class="four-icon"><i class="fa-solid fa-cloud-bolt" style="color: rgb(17, 63, 94);"></i></div>
+                <div class="weather-result">
+                    <span class="result-text">
+                        <p class="four-text">Rain Chance:</p> <p class="Rain-Chance four-text">Afternoon</p>
+                    </span>
+                    <p class="data">38%</p>
+                </div>
+            </div>
+            <div class="Box4 Box">
+                <div class="four-icon"><i class="fa-solid fa-sun" style="color: rgb(237, 176, 71);"></i></div>
+                <div class="weather-result">
+                    <span class="result-text">
+                        <p class="four-text">UV Index:</p> <p class="UV-Index four-text">High</p>
+                    </span>
+                    <p class="data">6</p>
+                </div>
+            </div>
+        </div>
+        <!-- AI-Chatbot -->
+        <div class="AI-Section">
+            <div class="AI-text-part box">
+                <h5 id="AI-line1">CONVERSATIONAL WEATHER INTELLIGENCE</h5>
+                <h1 id="AI-line2">Don't read weather data.</h1>
+                <h1 id="AI-line3">Ask what it means.</h1>
+                <p id="AI-line4">WeatherGPT turns forecasts into simple, useful decisions for travel, college, farming and everyday planning.</p>
+            </div>
+            <div class="AI-chat box">
+                <div class="chat-header">
+                    <div class="chat-symbol"><h3>W</h3></div>
+                    <div class="chat-header-text">WeatherGPT</div>
+                    <button class="clear-chat-btn" type="button" title="Clear chat history"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="chat-area">
+                    <div class="chat-box1">
+                        <div class="chat-symbol miniSymbol" ><h3>W</h3></div>
+                        <div class="chat1 text-chat"><p style="margin: 10px;">Hi! Ask me about today's weather, rain, travel timing or outdoor plans.</p></div>
+                    </div>
+                    <div class="chat-box2">
+                        <div class="chat2 text-chat" style="display: none;"><p style="margin: 10px;">You</p></div>
+                    </div>
+                    <div class="chat-box3">
+                        <div class="chat-symbol miniSymbol"><h3>W</h3></div>
+                        <div class="chat3 text-chat" style="display: none;"><p style="margin: 10px;">WeatherGPT</p></div>
+                    </div>
+                </div>
+                <div class="chat-footer">
+                    <div class="voice-btn"><button type="button">🎙️</button></div>
+                    <div class="chat-input"><input placeholder="Ask WeatherGPT..."></div>
+                    <div class="chat-send"><button type="button">&#11105;</button></div>
+                </div>
+            </div>
+        </div>
+    <!-- Footer -->
+    <footer>
+        <span class="footer-icon"><h3>W</h3></span>
+        <div class="footer-text">
+            <h3>WeatherGPT</h3> 
+            <p>SIH26068 Concept UI</p>
+        </div>
+        <div class="back-to-top"><a href="#">Back to top</a></div>
+    </footer>
+</body>
+<script src="script.js"></script>
+</html>

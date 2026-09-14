@@ -605,7 +605,7 @@ async function sendChatMessage() {
     try {
 
         const response = await fetch(
-            "http://127.0.0.1:8000/chat",
+            "https://verse-modules-chart-nurses.trycloudflare.com/chat",
             {
 
                 method: "POST",
@@ -655,7 +655,7 @@ async function sendChatMessage() {
         // Save AI answer
         saveChatMessage(
             "assistant",
-            answer
+            answer 
         );
 
 

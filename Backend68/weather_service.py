@@ -1,13 +1,9 @@
+import os
 import re
 from collections import Counter
 from datetime import datetime, timedelta
 
 import requests
-
-try:
-    from ollama import Client
-except ImportError:
-    Client = None
 
 
 # ============================================================
@@ -15,7 +11,13 @@ except ImportError:
 # ============================================================
 
 DEBUG = False
-OLLAMA_MODEL = "qwen3:4b-instruct"
+
+GEMINI_MODEL = "gemini-3.5-flash-lite"
+
+GEMINI_API_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/"
+    f"models/{GEMINI_MODEL}:generateContent"
+)
 
 
 def debug_log(label, value):
@@ -26,62 +28,84 @@ def debug_log(label, value):
 
 
 # ============================================================
-# OLLAMA
+# GEMINI
 # ============================================================
 
 def ask_llm(prompt):
-    if Client is None:
+
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not api_key:
         raise RuntimeError(
-            "Ollama Python package is not installed."
+            "GEMINI_API_KEY environment variable is not set."
         )
 
-    client = Client()
-
-    try:
-        response = client.chat(
-            model=OLLAMA_MODEL,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            think=False,
-            options={
-                "temperature": 0.2,
-                "num_ctx": 2048,
-                "num_predict": 180
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": prompt
+                    }
+                ]
             }
+        ],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 512
+        }
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key
+    }
+
+    response = requests.post(
+        GEMINI_API_URL,
+        headers=headers,
+        json=payload,
+        timeout=30
+    )
+
+    if not response.ok:
+        raise RuntimeError(
+            f"Gemini API error {response.status_code}: "
+            f"{response.text}"
         )
 
-    except TypeError:
+    data = response.json()
 
-        response = client.chat(
-            model=OLLAMA_MODEL,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt + "\n/no_think"
-                }
-            ],
-            options={
-                "temperature": 0.2,
-                "num_ctx": 2048,
-                "num_predict": 180
-            }
+    candidates = data.get(
+        "candidates",
+        []
+    )
+
+    if not candidates:
+        raise RuntimeError(
+            f"Gemini returned no candidates: {data}"
         )
 
-    content = response["message"]["content"]
+    parts = (
+        candidates[0]
+        .get("content", {})
+        .get("parts", [])
+    )
 
-    # Remove think block if model produces one
-    content = re.sub(
-        r"<think>.*?</think>",
-        "",
-        content,
-        flags=re.S | re.I
+    content = "".join(
+        part.get("text", "")
+        for part in parts
     ).strip()
 
-    debug_log("Final LLM output", content)
+    if not content:
+        raise RuntimeError(
+            f"Gemini returned an empty response: {data}"
+        )
+
+    debug_log(
+        "Final Gemini output",
+        content
+    )
 
     return content
 

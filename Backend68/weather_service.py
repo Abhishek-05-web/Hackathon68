@@ -632,67 +632,315 @@ def weather_code_to_text(code):
 
 
 # ============================================================
-# FETCH WEATHER
+# WEATHERAPI CONDITION -> INTERNAL WEATHER CODE
+# ============================================================
+
+def weatherapi_condition_to_code(condition_text):
+
+    text = (condition_text or "").lower()
+
+    if "thunder" in text:
+        return 95
+
+    if (
+        "snow" in text
+        or "sleet" in text
+        or "ice pellet" in text
+        or "blizzard" in text
+    ):
+        return 73
+
+    if (
+        "heavy rain" in text
+        or "torrential" in text
+    ):
+        return 65
+
+    if (
+        "rain" in text
+        or "shower" in text
+    ):
+        return 63
+
+    if "drizzle" in text:
+        return 53
+
+    if (
+        "fog" in text
+        or "mist" in text
+    ):
+        return 45
+
+    if "overcast" in text:
+        return 3
+
+    if "partly cloudy" in text:
+        return 2
+
+    if "cloudy" in text:
+        return 3
+
+    if (
+        "sunny" in text
+        or "clear" in text
+    ):
+        return 0
+
+    return 2
+
+
+# ============================================================
+# FETCH WEATHER FROM WEATHERAPI
 # ============================================================
 
 def fetch_weather(latitude, longitude):
 
-    url = (
-        "https://api.open-meteo.com/v1/forecast"
-    )
+    api_key = os.getenv("WEATHER_API_KEY")
+
+    if not api_key:
+        raise RuntimeError(
+            "WEATHER_API_KEY environment variable is not set."
+        )
+
+    url = "https://api.weatherapi.com/v1/forecast.json"
 
     params = {
-
-        "latitude": latitude,
-
-        "longitude": longitude,
-
-        "current": (
-            "temperature_2m,"
-            "apparent_temperature,"
-            "relative_humidity_2m,"
-            "wind_speed_10m,"
-            "wind_direction_10m,"
-            "precipitation,"
-            "weather_code"
-        ),
-
-        "hourly": (
-            "temperature_2m,"
-            "relative_humidity_2m,"
-            "precipitation_probability,"
-            "precipitation,"
-            "wind_speed_10m,"
-            "wind_direction_10m,"
-            "weather_code"
-        ),
-
-        "daily": (
-            "weather_code,"
-            "temperature_2m_max,"
-            "temperature_2m_min,"
-            "precipitation_sum,"
-            "precipitation_probability_max,"
-            "wind_speed_10m_max,"
-            "uv_index_max"
-        ),
-
-        "timezone": "auto",
-
-        "forecast_days": 7
+        "key": api_key,
+        "q": f"{latitude},{longitude}",
+        "days": 3,
+        "aqi": "no",
+        "alerts": "no"
     }
 
     response = requests.get(
         url,
         params=params,
-        timeout=12
+        timeout=20
     )
 
-    response.raise_for_status()
+    if not response.ok:
+        raise RuntimeError(
+            f"WeatherAPI error {response.status_code}: "
+            f"{response.text}"
+        )
 
-    return response.json()
+    api_data = response.json()
 
+    location = api_data["location"]
+    current = api_data["current"]
 
+    forecast_days = (
+        api_data
+        .get("forecast", {})
+        .get("forecastday", [])
+    )
+
+    # --------------------------------------------------------
+    # Convert WeatherAPI -> existing WeatherGPT format
+    # --------------------------------------------------------
+
+    hourly_time = []
+    hourly_temp = []
+    hourly_humidity = []
+    hourly_rain_probability = []
+    hourly_precipitation = []
+    hourly_wind_speed = []
+    hourly_wind_direction = []
+    hourly_weather_code = []
+
+    daily_time = []
+    daily_weather_code = []
+    daily_temp_max = []
+    daily_temp_min = []
+    daily_precipitation = []
+    daily_rain_probability = []
+    daily_wind_max = []
+    daily_uv = []
+
+    for forecast_day in forecast_days:
+
+        day = forecast_day["day"]
+
+        daily_time.append(
+            forecast_day["date"]
+        )
+
+        daily_weather_code.append(
+            weatherapi_condition_to_code(
+                day["condition"]["text"]
+            )
+        )
+
+        daily_temp_max.append(
+            day["maxtemp_c"]
+        )
+
+        daily_temp_min.append(
+            day["mintemp_c"]
+        )
+
+        daily_precipitation.append(
+            day["totalprecip_mm"]
+        )
+
+        daily_rain_probability.append(
+            day.get(
+                "daily_chance_of_rain",
+                0
+            )
+        )
+
+        daily_wind_max.append(
+            day["maxwind_kph"]
+        )
+
+        daily_uv.append(
+            day.get("uv", 0)
+        )
+
+        for hour in forecast_day.get("hour", []):
+
+            hourly_time.append(
+                hour["time"]
+            )
+
+            hourly_temp.append(
+                hour["temp_c"]
+            )
+
+            hourly_humidity.append(
+                hour["humidity"]
+            )
+
+            hourly_rain_probability.append(
+                hour.get(
+                    "chance_of_rain",
+                    0
+                )
+            )
+
+            hourly_precipitation.append(
+                hour.get(
+                    "precip_mm",
+                    0
+                )
+            )
+
+            hourly_wind_speed.append(
+                hour["wind_kph"]
+            )
+
+            hourly_wind_direction.append(
+                hour["wind_degree"]
+            )
+
+            hourly_weather_code.append(
+                weatherapi_condition_to_code(
+                    hour["condition"]["text"]
+                )
+            )
+
+    # Same structure that old Open-Meteo code expected
+    return {
+
+        "latitude": location["lat"],
+
+        "longitude": location["lon"],
+
+        "timezone": location["tz_id"],
+
+        "resolved_location": {
+            "city": location.get("name"),
+            "state": location.get("region"),
+            "country": location.get("country")
+        },
+
+        "current": {
+
+            "time":
+                location["localtime"],
+
+            "temperature_2m":
+                current["temp_c"],
+
+            "apparent_temperature":
+                current["feelslike_c"],
+
+            "relative_humidity_2m":
+                current["humidity"],
+
+            "wind_speed_10m":
+                current["wind_kph"],
+
+            "wind_direction_10m":
+                current["wind_degree"],
+
+            "precipitation":
+                current.get(
+                    "precip_mm",
+                    0
+                ),
+
+            "weather_code":
+                weatherapi_condition_to_code(
+                    current["condition"]["text"]
+                )
+        },
+
+        "hourly": {
+
+            "time":
+                hourly_time,
+
+            "temperature_2m":
+                hourly_temp,
+
+            "relative_humidity_2m":
+                hourly_humidity,
+
+            "precipitation_probability":
+                hourly_rain_probability,
+
+            "precipitation":
+                hourly_precipitation,
+
+            "wind_speed_10m":
+                hourly_wind_speed,
+
+            "wind_direction_10m":
+                hourly_wind_direction,
+
+            "weather_code":
+                hourly_weather_code
+        },
+
+        "daily": {
+
+            "time":
+                daily_time,
+
+            "weather_code":
+                daily_weather_code,
+
+            "temperature_2m_max":
+                daily_temp_max,
+
+            "temperature_2m_min":
+                daily_temp_min,
+
+            "precipitation_sum":
+                daily_precipitation,
+
+            "precipitation_probability_max":
+                daily_rain_probability,
+
+            "wind_speed_10m_max":
+                daily_wind_max,
+
+            "uv_index_max":
+                daily_uv
+        }
+    }
 # ============================================================
 # NORMALIZE WEATHER
 # ============================================================
@@ -857,7 +1105,7 @@ def normalize_weather(data):
                 data["timezone"]
         },
 
-        "source": "Open-Meteo"
+        "source": "WeatherAPI.com"
     }
 
 
@@ -1646,7 +1894,7 @@ def get_weather(
 ):
 
     # ----------------------------------------
-    # 1. Understand query WITHOUT AI
+    # 1. Understand query
     # ----------------------------------------
 
     decoded = question_decoder(
@@ -1654,25 +1902,7 @@ def get_weather(
     )
 
     # ----------------------------------------
-    # 2. Get location name
-    # ----------------------------------------
-
-    location = get_place_name(
-        latitude,
-        longitude
-    )
-
-    debug_log(
-        "Resolved location",
-        {
-            "latitude": latitude,
-            "longitude": longitude,
-            "location": location
-        }
-    )
-
-    # ----------------------------------------
-    # 3. Fetch real weather
+    # 2. Fetch WeatherAPI data
     # ----------------------------------------
 
     raw = fetch_weather(
@@ -1684,8 +1914,19 @@ def get_weather(
         raw
     )
 
+    # Location WeatherAPI se
+    location = raw.get(
+        "resolved_location",
+        {}
+    )
+
+    debug_log(
+        "Resolved location",
+        location
+    )
+
     # ----------------------------------------
-    # 4. Resolve exact requested date
+    # 3. Resolve requested date
     # ----------------------------------------
 
     time_reference = decoded.get(
@@ -1695,67 +1936,43 @@ def get_weather(
 
     forecast_current_time = (
         raw
-        .get(
-            "current",
-            {}
-        )
-        .get(
-            "time"
-        )
+        .get("current", {})
+        .get("time")
     )
 
     target_date = resolve_target_date(
-
         query,
-
         time_reference,
-
-        raw.get(
-            "timezone"
-        ),
-
+        raw.get("timezone"),
         forecast_current_time
     )
 
-    decoded[
-        "target_date"
-    ] = target_date
+    decoded["target_date"] = target_date
 
     # ----------------------------------------
-    # 5. Select only requested weather
+    # 4. Select requested forecast
     # ----------------------------------------
 
     selected = select_weather_for_query(
-
         weather,
-
         target_date,
-
         time_reference
     )
 
     # ----------------------------------------
-    # 6. Attach location
+    # 5. Attach location
     # ----------------------------------------
 
-    selected[
-        "location"
-    ] = {
+    selected["location"] = {
 
         "city":
-            location.get(
-                "city"
-            ),
+            location.get("city"),
 
         "state":
-            location.get(
-                "state"
-            ),
+            location.get("state"),
 
         "country":
-            location.get(
-                "country"
-            ),
+            location.get("country"),
 
         "latitude":
             raw["latitude"],
@@ -1768,24 +1985,17 @@ def get_weather(
     }
 
     # ----------------------------------------
-    # 7. Warnings WITHOUT AI
+    # 6. Warnings
     # ----------------------------------------
 
-    selected[
-        "warnings"
-    ] = get_warnings(
+    selected["warnings"] = get_warnings(
         selected
     )
-
-    # ----------------------------------------
-    # Return weather data + decoded query
-    # ----------------------------------------
 
     return (
         selected,
         decoded
     )
-
 
 # ============================================================
 # OPTIONAL TEST
@@ -1799,5 +2009,5 @@ if __name__ == "__main__":
 
     print(
         "LLM model:",
-        OLLAMA_MODEL
+        GEMINI_MODEL
     )

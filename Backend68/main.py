@@ -1,12 +1,20 @@
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import weather_service
 
 
 app = FastAPI(title="WeatherGPT API")
-# Frontend ko backend access dene ke liye
+
+
+# ============================================================
+# CORS
+# ============================================================
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -19,26 +27,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Frontend se ye data aayega
+
+# ============================================================
+# REQUEST MODEL
+# ============================================================
+
 class ChatRequest(BaseModel):
     question: str
     latitude: float
     longitude: float
 
 
-# Backend check
-@app.get("/")
-def home():
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.get("/api/health")
+def health():
     return {
         "status": "WeatherGPT backend is running"
     }
 
 
-# AI Chat endpoint
+# ============================================================
+# CHAT API
+# ============================================================
+
 @app.post("/chat")
 def chat(request: ChatRequest):
 
     try:
+
         data, decoded = weather_service.get_weather(
             request.latitude,
             request.longitude,
@@ -55,7 +74,10 @@ def chat(request: ChatRequest):
             "answer": answer,
             "location": data.get("location"),
             "requested_date": data.get("requested_date"),
-            "warnings": data.get("warnings", {"warnings": []})
+            "warnings": data.get(
+                "warnings",
+                {"warnings": []}
+            )
         }
 
     except Exception as error:
@@ -66,3 +88,23 @@ def chat(request: ChatRequest):
             status_code=500,
             detail=str(error)
         )
+
+
+# ============================================================
+# FRONTEND
+# IMPORTANT: KEEP THIS AFTER API ROUTES
+# ============================================================
+
+FRONTEND_DIR = (
+    Path(__file__).resolve().parent.parent
+    / "Frontend68"
+)
+
+app.mount(
+    "/",
+    StaticFiles(
+        directory=str(FRONTEND_DIR),
+        html=True
+    ),
+    name="frontend"
+)

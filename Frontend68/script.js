@@ -605,7 +605,7 @@ async function sendChatMessage() {
     try {
 
         const response = await fetch(
-            "https://verse-modules-chart-nurses.trycloudflare.com/chat",
+            "/chat",
             {
 
                 method: "POST",
